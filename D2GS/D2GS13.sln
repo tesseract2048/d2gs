@@ -1,0 +1,25 @@
+Microsoft Visual Studio Solution File, Format Version 11.00
+# Visual Studio 2010
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "D2GS", "D2GS.vcxproj", "{A06FE5D1-25C8-47F2-912E-351CA1735530}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Win32 = Debug|Win32
+		Debug|x64 = Debug|x64
+		Release|Win32 = Release|Win32
+		Release|x64 = Release|x64
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{A06FE5D1-25C8-47F2-912E-351CA1735530}.Debug|Win32.ActiveCfg = Debug|Win32
+		{A06FE5D1-25C8-47F2-912E-351CA1735530}.Debug|Win32.Build.0 = Debug|Win32
+		{A06FE5D1-25C8-47F2-912E-351CA1735530}.Debug|x64.ActiveCfg = Debug|x64
+		{A06FE5D1-25C8-47F2-912E-351CA1735530}.Debug|x64.Build.0 = Debug|x64
+		{A06FE5D1-25C8-47F2-912E-351CA1735530}.Release|Win32.ActiveCfg = Release|Win32
+		{A06FE5D1-25C8-47F2-912E-351CA1735530}.Release|Win32.Build.0 = Release|Win32
+		{A06FE5D1-25C8-47F2-912E-351CA1735530}.Release|x64.ActiveCfg = Release|x64
+		{A06FE5D1-25C8-47F2-912E-351CA1735530}.Release|x64.Build.0 = Release|x64
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal

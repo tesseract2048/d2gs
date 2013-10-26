@@ -1,0 +1,5 @@
+*.obj
+*.dll
+*.sdf
+*.ncb
+.DS_Store

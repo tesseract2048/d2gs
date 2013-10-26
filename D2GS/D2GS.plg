@@ -1,0 +1,135 @@
+<html>
+<body>
+<pre>
+<h1>Build Log</h1>
+<h3>
+--------------------Configuration: D2GS - Win32 Debug--------------------
+</h3>
+<h3>Command Lines</h3>
+Creating command line "rc.exe /l 0x804 /fo"Debug/d2server.res" /i "res" /d "_DEBUG" "D:\d2gs_src\D2GS\res\d2server.rc"" 
+Creating temporary file "C:\Users\bin\AppData\Local\Temp\RSPFB56.tmp" with contents
+[
+/nologo /Zp4 /MDd /W3 /Gm /GX /ZI /Od /D "WIN32" /D "_DEBUG" /D "_CONSOLE" /D "_MBCS" /D "DEBUG" /D "D2GS" /D "DEBUG_ON_CONSOLE" /FR"Debug/" /Fp"Debug/D2GS.pch" /YX /Fo"Debug/" /Fd"Debug/" /FD /GZ /opt:nowin98 /c 
+"D:\d2gs_src\D2GS\bnethash.c"
+"D:\d2gs_src\D2GS\callback.c"
+"D:\d2gs_src\D2GS\charlist.c"
+"D:\d2gs_src\D2GS\config.c"
+"D:\d2gs_src\D2GS\d2gamelist.c"
+"D:\d2gs_src\D2GS\d2ge.c"
+"D:\d2gs_src\D2GS\debug.c"
+"D:\d2gs_src\D2GS\eventlog.c"
+"D:\d2gs_src\D2GS\handle_s2s.c"
+"D:\d2gs_src\D2GS\hexdump.c"
+"D:\d2gs_src\D2GS\main.c"
+"D:\d2gs_src\D2GS\net.c"
+"D:\d2gs_src\D2GS\telnetd.c"
+"D:\d2gs_src\D2GS\timer.c"
+"D:\d2gs_src\D2GS\utils.c"
+"D:\d2gs_src\D2GS\vars.c"
+"D:\d2gs_src\D2GS\versioncheck.c"
+]
+Creating command line "cl.exe @C:\Users\bin\AppData\Local\Temp\RSPFB56.tmp" 
+Creating temporary file "C:\Users\bin\AppData\Local\Temp\RSPFB57.tmp" with contents
+[
+kernel32.lib user32.lib gdi32.lib ws2_32.lib Advapi32.lib msvcrt.lib oldnames.lib /nologo /subsystem:console /incremental:yes /pdb:"Debug/D2GS.pdb" /debug /machine:I386 /nodefaultlib /out:"Debug/D2GS.exe" /pdbtype:sept 
+.\Debug\bnethash.obj
+.\Debug\callback.obj
+.\Debug\charlist.obj
+.\Debug\config.obj
+.\Debug\d2gamelist.obj
+.\Debug\d2ge.obj
+.\Debug\debug.obj
+.\Debug\eventlog.obj
+.\Debug\handle_s2s.obj
+.\Debug\hexdump.obj
+.\Debug\main.obj
+.\Debug\net.obj
+.\Debug\telnetd.obj
+.\Debug\timer.obj
+.\Debug\utils.obj
+.\Debug\vars.obj
+.\Debug\versioncheck.obj
+.\Debug\d2server.res
+.\D2GElib\d2server.lib
+]
+Creating command line "link.exe @C:\Users\bin\AppData\Local\Temp\RSPFB57.tmp"
+<h3>Output Window</h3>
+Compiling resources...
+Compiling...
+bnethash.c
+callback.c
+charlist.c
+config.c
+d2gamelist.c
+d:\d2gs_src\d2gs\d2gamelist.c(645) : warning C4047: 'function' : 'unsigned long ' differs in levels of indirection from 'void *'
+d:\d2gs_src\d2gs\d2gamelist.c(645) : warning C4024: 'D2GSSendDatabaseCharacter' : different types for formal and actual parameter 8
+d2ge.c
+d:\d2gs_src\d2gs\d2ge.c(218) : warning C4013: 'D2GSResetGameList' undefined; assuming extern returning int
+d:\d2gs_src\d2gs\d2ge.c(240) : warning C4047: 'function' : 'unsigned long ' differs in levels of indirection from 'int (__fastcall *)(const char *,unsigned long ,unsigned short ,char *,unsigned long *)'
+d:\d2gs_src\d2gs\d2ge.c(240) : warning C4024: 'searchAndPatch' : different types for formal and actual parameter 1
+d:\d2gs_src\d2gs\d2ge.c(241) : warning C4047: 'function' : 'unsigned long ' differs in levels of indirection from 'void (__fastcall *)(unsigned short )'
+d:\d2gs_src\d2gs\d2ge.c(241) : warning C4024: 'searchAndPatch' : different types for formal and actual parameter 1
+debug.c
+eventlog.c
+handle_s2s.c
+d:\d2gs_src\d2gs\handle_s2s.c(407) : error C2065: '__FUNCTION__' : undeclared identifier
+d:\d2gs_src\d2gs\handle_s2s.c(407) : warning C4047: 'function' : 'const char *' differs in levels of indirection from 'int '
+d:\d2gs_src\d2gs\handle_s2s.c(407) : warning C4024: 'D2GSEventLog' : different types for formal and actual parameter 1
+d:\d2gs_src\d2gs\handle_s2s.c(409) : warning C4013: 'D2GELoadConfig' undefined; assuming extern returning int
+d:\d2gs_src\d2gs\handle_s2s.c(497) : warning C4133: '=' : incompatible types - from 'struct t_d2cs_d2gs_creategamereq *' to 'char *'
+d:\d2gs_src\d2gs\handle_s2s.c(1104) : warning C4047: 'function' : 'unsigned long ' differs in levels of indirection from 'void *'
+d:\d2gs_src\d2gs\handle_s2s.c(1104) : warning C4024: 'D2GSSendDatabaseCharacter' : different types for formal and actual parameter 8
+d:\d2gs_src\d2gs\handle_s2s.c(1119) : warning C4047: 'function' : 'unsigned long ' differs in levels of indirection from 'void *'
+d:\d2gs_src\d2gs\handle_s2s.c(1119) : warning C4024: 'D2GSSendDatabaseCharacter' : different types for formal and actual parameter 8
+d:\d2gs_src\d2gs\handle_s2s.c(1177) : warning C4090: 'function' : different 'const' qualifiers
+d:\d2gs_src\d2gs\handle_s2s.c(1177) : warning C4024: 'D2GSCBSendItemRecord' : different types for formal and actual parameter 1
+d:\d2gs_src\d2gs\handle_s2s.c(1537) : warning C4047: 'function' : 'unsigned long ' differs in levels of indirection from 'void *'
+d:\d2gs_src\d2gs\handle_s2s.c(1537) : warning C4024: 'D2GSSendDatabaseCharacter' : different types for formal and actual parameter 8
+d:\d2gs_src\d2gs\handle_s2s.c(1542) : warning C4047: 'function' : 'unsigned long ' differs in levels of indirection from 'void *'
+d:\d2gs_src\d2gs\handle_s2s.c(1542) : warning C4024: 'D2GSSendDatabaseCharacter' : different types for formal and actual parameter 8
+hexdump.c
+main.c
+d:\d2gs_src\d2gs\main.c(280) : warning C4022: 'memcpy' : pointer mismatch for actual parameter 1
+d:\d2gs_src\d2gs\main.c(284) : warning C4028: formal parameter 3 different from declaration
+d:\d2gs_src\d2gs\main.c(284) : warning C4028: formal parameter 5 different from declaration
+d:\d2gs_src\d2gs\main.c(288) : warning C4022: 'memcpy' : pointer mismatch for actual parameter 2
+d:\d2gs_src\d2gs\main.c(295) : warning C4022: 'memcmp' : pointer mismatch for actual parameter 1
+d:\d2gs_src\d2gs\main.c(298) : warning C4022: 'memcpy' : pointer mismatch for actual parameter 1
+net.c
+telnetd.c
+timer.c
+utils.c
+vars.c
+versioncheck.c
+Ö´ÐÐ cl.exe Ê±³ö´í.
+Creating temporary file "C:\Users\bin\AppData\Local\Temp\RSP1D1B.tmp" with contents
+[
+/nologo /o"Debug/D2GS.bsc" 
+.\Debug\bnethash.sbr
+.\Debug\callback.sbr
+.\Debug\charlist.sbr
+.\Debug\config.sbr
+.\Debug\d2gamelist.sbr
+.\Debug\d2ge.sbr
+.\Debug\debug.sbr
+.\Debug\eventlog.sbr
+.\Debug\handle_s2s.sbr
+.\Debug\hexdump.sbr
+.\Debug\main.sbr
+.\Debug\net.sbr
+.\Debug\telnetd.sbr
+.\Debug\timer.sbr
+.\Debug\utils.sbr
+.\Debug\vars.sbr
+.\Debug\versioncheck.sbr]
+Creating command line "bscmake.exe @C:\Users\bin\AppData\Local\Temp\RSP1D1B.tmp"
+Creating browse info file...
+<h3>Output Window</h3>
+
+
+
+<h3>Results</h3>
+D2GS.exe - 1 error(s), 0 warning(s)
+</pre>
+</body>
+</html>

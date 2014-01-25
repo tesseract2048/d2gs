@@ -1,0 +1,45 @@
+
+1、GS服务器和客户端在开始交互的时候，协商了一个DWORD GameHash。然后由这个GameHash经过BSHA-1处理生成
+16字节RC4_KEY_0X66，再经过BSHA-1处理，生成16字节RC4_KEY_0XAE。然后对RC4_KEY_0X66和RC4_KEY_0XAE进行
+rc4_setup动作。
+
+2、当客户端接收到0XAE报文时，它使用RC4_KEY_0XAE来解密数据；当客户端发送0X66报文时，它使用RC4_KEY_0X66
+来加密数据。
+
+3、0XAE报文具有如下格式：
+struct struct_0XAE
+{
+  BYTE PacketID; // +00 永远是0XAE
+  WORD PacketLen; // +01 表示后面报文体的长度，报文体需要用RC4_KEY_0XAE来解密
+  BYTE WardenCMD; // +03 Warden命令，目前Warden支持命令为00、01、02。
+  // +04 Warden命令参数
+}
+
+4、WardenCMD00：当WardenCMD=00时，将检查客户端是否已经下载了指定.mod。Warden命令参数的前16个字节是.mod的
+名字；Warden参数的后16个字节是用于解密该.mod用的RC4_KEY；Warden参数的最后4个字节是.mod的长度。
+如果在客户端的bncache.dat中已经存放了指定的.mod，则该.mod将被解密并加载，最后由客户端返回0X66报文，报文
+内容为01；如果在客户端的bncache.dat中没有指定的.mod，则客户端将准备下载该.mod，首先分配.mod长度的内存，
+最后由客户端返回0X66报文，报文内容为00；
+
+5、WardenCMD01：如果服务器发送WardenCMD00，而客户端返回00，表示没有该.mod，则服务器将发送WardenCMD01报文，
+将该.mod下载到客户端。WardenCMD01报文的格式如下：
+
+struct WardenCMD01 //即上面+04 Warden命令参数的部分
+{
+  WORD ParamLen; // +00 本次传送数据的长度
+  // 传送的数据
+}
+客户端在接收到WardenCMD01报文的时候，将传送的数据依次写入在WardenCMD00报文处理时分配的内容中。
+
+当所有.mod数据下载完毕（一般17KB～18KB左右），将使用WardenCMD00中的RC4_KEY解密整个.mod数据。
+解密完毕後，客户端将检查该.mod最后的256字节数字签名（SIGN），并将结果与.mod的MD5结果进行比较，
+如果不相符，则该.mod将被忽略。如果正确，则写入bncache.dat，加载该.mod，最后由客户端返回0X66报文，
+报文内容为01。
+
+6、WardenCMD02：当客户端的.mod模块被正确下载并加载之后，服务器将周期性的发送WardenCMD02报文进行
+指定检查，客户端则需要对每个WardenCMD02报文进行应答，其应答内容的第一个字节必须为02，长度不定。
+
+ 
+由于在客户端下载.mod之后需要进行数字签名的检查，所以无法创建自己的.mod来使Warden工作。目前唯一的
+解决办法就是截获官方的.mod，并将之分析应用。
+ 

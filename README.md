@@ -1,13 +1,25 @@
 D2GS for 1.13c
 ===================================
 based on the work of marsgod & onlyer & faster
+
 optimized D2GS & D2GE in C++
 (used in production for 91D2.cn)
 
 features:
-I. support multi D2GE process
-II. global DC counter
-III. firewall to prevent item hacking
+
+* support multi D2GE process
+* global DC counter
+* firewall to prevent item hacking
+
+## D2GS
+Diablo II Game Server, designed for handling clients and s2s communications. 
+
+## D2GE
+Diablo II Game Engine, designed for really handling game logic. Based on Diablo II binaries, depending on LibD2Server.
+
+## LibD2Server
+Library designed to patch Diablo II binaries and make them ready to serve.
+
 
 LICENSE
 ===================================

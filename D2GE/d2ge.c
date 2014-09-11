@@ -9,9 +9,8 @@
 #include "eventlog.h"
 #include "callback.h"
 #include "vars.h"
-#include "net.h"
-
-
+#include "client.h"
+#include "hp.h"
 
 /* variables */
 static D2GSINFO					gD2GSInfo;
@@ -221,31 +220,34 @@ DWORD WINAPI D2GEThread(LPVOID lpParameter)
 } /* End of D2GEThread */
 
 
-int __stdcall D2GSListen(SOCKET s, const struct sockaddr *name, int namelen)
+int __stdcall D2GSBind(SOCKET s, const struct sockaddr *name, int namelen)
 {
-	int rtn;
-	struct sockaddr_in my_addr;
-	int port;
-	my_addr.sin_family = AF_INET;
-	my_addr.sin_port = 0; //htons(port);
-	my_addr.sin_addr.s_addr = inet_addr("127.0.0.1");
-	memset(my_addr.sin_zero, 0, 8);
-	rtn = bind(s, &my_addr, sizeof(struct sockaddr_in));
-	trunk_s = s;
-	return rtn;
+	WSASetLastError(0);
+	return 0;
 }
-/*
+
+int __stdcall D2GSListen(SOCKET s, int backlog)
+{
+	WSASetLastError(0);
+	return 0;
+}
+
 int __stdcall D2GSAccept(SOCKET s, struct sockaddr *addr, int *addrlen)
 {
-	char NoDelay = 1;
-	int rtn = accept(s, addr, addrlen);
-	if (rtn != SOCKET_ERROR)
-	{
-		setsockopt(s, IPPROTO_TCP, TCP_NODELAY, &NoDelay, sizeof(char));
-	}
-	return rtn;
+	int client = (int)get_client();
+	hp_setup((SOCKET)client);
+	getpeername((SOCKET)client, addr, addrlen);
+	D2GEEventLog(__FUNCTION__, "Accepted client socket: 0x%x", client);
+	return client;
+	
 }
-*/
+
+int __stdcall D2GSSelectAccept(int nfds, fd_set *readfs, fd_set *writefds, fd_set *exceptfds, const struct timeval *timeout)
+{
+	int timeout_ms = timeout->tv_sec * 1000 + timeout->tv_usec; 
+	return wait_client(timeout_ms);
+}
+
 //static int IOCPTimer = 0;
 
 int __stdcall D2GSGetIOCP(HANDLE CompletionPort, LPDWORD lpNumberOfBytesTransferred, PULONG_PTR lpCompletionKey, LPOVERLAPPED *lpOverlapped, DWORD dwMilliseconds)
@@ -258,128 +260,22 @@ int __stdcall D2GSSend(SOCKET s, const char *buf, int len, int flags)
 	return send(s, buf, len ,flags);
 }
 
-static DWORD SOJMsgCheckerAddr = 0x680220DD;
-static DWORD SendSystemMsg = 0x68005B20;
-static DWORD CheckDCRoutine = 0x68005A10;
-static DWORD GetGameInfo = 0x68014684;
-
-void TriggerDC()
+int __stdcall NopSendPacket(DWORD unk1, DWORD ClientID, unsigned char *ThePacket, DWORD PacketLen)
 {
-	int i;
-	for (i = 0; i < 0x400; i ++)
-	{
-		__asm
-		{
-			mov ecx, i
-			call dword ptr ds:[68014684H]
-			test eax, eax
-			jz over
-			mov ecx, eax
-			call dword ptr ds:[68014670H]
-			mov esi, eax
-			test esi, esi
-			jz over
-			push	1
-			push	1
-			push	esi
-			call	CheckDCRoutine
-			add		esp, 0Ch
-			mov ecx, esi
-			call dword ptr ds:[68014644H]
-		}
-over:
-		continue;
-	}
+	return 0;
 }
 
-void ShowSOJMsg(int counter)
-{
-	int i;
-	for (i = 0; i < 0x400; i ++)
-	{
-		__asm
-		{
-			mov ecx, i
-			call dword ptr ds:[68014684H]
-			test eax, eax
-			jz over
-			mov ecx, eax
-			call dword ptr ds:[68014670H]
-			mov esi, eax
-			test esi, esi
-			jz over
-			push	counter
-			push	4
-			push	11h
-			push	esi
-			call	SendSystemMsg
-			add		esp, 10h
-			mov ecx, esi
-			call dword ptr ds:[68014644H]
-		}
-over:
-		continue;
-	}
-}
+typedef int (*Fog10251)(void*,int);
 
-__declspec(naked) void SOJMsgChecker()
-{
-	//dont do anything, we're going to ann it by our own system
-	__asm
-	{
-		ret
-		//push	1
-		//push	1
-		//push	esi
-		//call	CheckDCRoutine
-		//add		esp, 0Ch
-		//ret
-
-		//push 0
-		//push 4
-		//push 12h
-		//push esi
-		//call SendSystemMsg
-		//add     esp, 10h
-		//ret
-
-
-		//mov eax, 91d
-		//jmp SOJMsgCheckerAddr
-	}
-}
-
-__declspec(naked) void SingleRoomDCPatch()
-{
-	__asm
-	{
-		pushad
-	}
-	send_soj_counter_update(1);
-	__asm
-	{
-		popad
-		mov eax, 0
-		ret
-	}
-}
-
-static unsigned int iploop = 0;
-
-int __stdcall D2GSGetPeerName(SOCKET s, struct sockaddr *name, int *namelen)
-{
-	int ret = getpeername(s, name, namelen);
-	if (ret == SOCKET_ERROR) return ret;
-	((struct sockaddr_in*)name)->sin_addr.S_un.S_addr = (iploop++);
-	return ret;
-}
-
-int __stdcall D2GSAccept(SOCKET s, struct sockaddr *addr, int *addrlen)
-{
-	int ret = accept(s, addr, addrlen);
-	if (ret == SOCKET_ERROR) return ret;
-	((struct sockaddr_in*)addr)->sin_addr.S_un.S_addr = (iploop++);
-	return ret;
+signed int __fastcall D2GSFog10251(void* s, int a2) {
+	Fog10251 ptr = (Fog10251)0x6ff5e460;
+	signed int result = ptr(s, a2);
+	DWORD sp = (DWORD)s - 0x2C;
+	int buf_size = *((int*)(sp + 0xA8));
+	int sock = *((int*)(sp + 0x10));
+	char* buf = (char*)(sp + 0xB0);
+	hp_handle_game_packet(sock, buf, buf_size);
+	return result;
 }
 
 static int IOCPEntry;
@@ -396,49 +292,108 @@ void D2GEPatch(){
 	unsigned char patch7[1] = {0xEB};
 	unsigned char patch8[1] = {0x01};
 	unsigned char patch9[2] = {0x90, 0xE9};
-	DWORD fog, addr_my_func, target_addr, e8_arg, vp_old, ff15_arg;
-
-	srand(time(NULL));
+	DWORD fog, d2net, addr_my_func, target_addr, e8_arg, vp_old, ff15_arg;
 
 	//hook 6FF70E69 in fog.dll RVA: +0x20E69
 	//int __stdcall bind(SOCKET s, const struct sockaddr *name, int namelen)
 	fog = LoadLibrary("fog.dll");
+	d2net = LoadLibrary("d2net.dll");
 
-	addr_my_func = &D2GSListen;
-	target_addr = fog + 0x21159;
+	addr_my_func = D2GSBind;
+	target_addr = fog + 0x20E69;
 	e8_arg = addr_my_func - target_addr - 5;
 	VirtualProtect(target_addr + 1, 4, PAGE_EXECUTE_READWRITE, &vp_old); 
 	memcpy(target_addr + 1, &e8_arg, 4);
 	VirtualProtect(target_addr + 1, 4, vp_old, &vp_old); 
 	
-	addr_my_func = &D2GSGetPeerName;
-	target_addr = 0x6FF75298;
-	VirtualProtect(target_addr, 4, PAGE_EXECUTE_READWRITE, &vp_old); 
-	memcpy(target_addr, &addr_my_func, 4);
-	VirtualProtect(target_addr, 4, vp_old, &vp_old); 
+	addr_my_func = D2GSListen;
+	target_addr = fog + 0x20E86;
+	e8_arg = addr_my_func - target_addr - 5;
+	VirtualProtect(target_addr + 1, 4, PAGE_EXECUTE_READWRITE, &vp_old); 
+	memcpy(target_addr + 1, &e8_arg, 4);
+	VirtualProtect(target_addr + 1, 4, vp_old, &vp_old); 
 
-	addr_my_func = &D2GSAccept;
-	target_addr = 0x6FF7528C;
-	VirtualProtect(target_addr, 4, PAGE_EXECUTE_READWRITE, &vp_old); 
-	memcpy(target_addr, &addr_my_func, 4);
-	VirtualProtect(target_addr, 4, vp_old, &vp_old); 
+	addr_my_func = D2GSAccept;
+	target_addr = fog + 0x201BE;
+	e8_arg = addr_my_func - target_addr - 5;
+	VirtualProtect(target_addr + 1, 4, PAGE_EXECUTE_READWRITE, &vp_old); 
+	memcpy(target_addr + 1, &e8_arg, 4);
+	VirtualProtect(target_addr + 1, 4, vp_old, &vp_old); 
+	
+	addr_my_func = D2GSSelectAccept;
+	target_addr = fog + 0x209BE;
+	e8_arg = addr_my_func - target_addr - 5;
+	VirtualProtect(target_addr + 1, 4, PAGE_EXECUTE_READWRITE, &vp_old); 
+	memcpy(target_addr + 1, &e8_arg, 4);
+	VirtualProtect(target_addr + 1, 4, vp_old, &vp_old); 
+	
+	addr_my_func = NopSendPacket;
+	target_addr = d2net + 0x6505;
+	e8_arg = addr_my_func - target_addr - 5;
+	VirtualProtect(target_addr + 1, 4, PAGE_EXECUTE_READWRITE, &vp_old); 
+	memcpy(target_addr + 1, &e8_arg, 4);
+	VirtualProtect(target_addr + 1, 4, vp_old, &vp_old); 
 
-	/*target_addr = fog + 0x0ECC8; 
+	/*addr_my_func = &readfile_ptr;
+	target_addr = fog + 0x1FE3E;
+	VirtualProtect(target_addr + 2, 4, PAGE_EXECUTE_READWRITE, &vp_old); 
+	memcpy(target_addr + 2, &addr_my_func, 4);
+	VirtualProtect(target_addr + 2, 4, vp_old, &vp_old); */
+	
+	addr_my_func = D2GSFog10251;
+	target_addr = fog + 0x206E5;
+	e8_arg = addr_my_func - target_addr - 5;
+	VirtualProtect(target_addr + 1, 4, PAGE_EXECUTE_READWRITE, &vp_old); 
+	memcpy(target_addr + 1, &e8_arg, 4);
+	VirtualProtect(target_addr + 1, 4, vp_old, &vp_old); 
+
+	/*
+	addr_my_func = &IOCPEntry;
+	IOCPEntry = D2GSGetIOCP;
+	target_addr = fog + 0x20550;
+	ff15_arg = addr_my_func;
+	VirtualProtect(target_addr + 2, 4, PAGE_EXECUTE_READWRITE, &vp_old); 
+	memcpy(target_addr + 2, &ff15_arg, 4);
+	VirtualProtect(target_addr + 2, 4, vp_old, &vp_old); 
+///6ff7527c
+
+	addr_my_func = D2GSSend;
+	target_addr = fog + 0x2527C;
+	ff15_arg = addr_my_func;
+	VirtualProtect(target_addr, 4, PAGE_EXECUTE_READWRITE, &vp_old); 
+	memcpy(target_addr, &ff15_arg, 4);
+	VirtualProtect(target_addr, 4, vp_old, &vp_old); 
+	*/
+
+	//patch fog qserver
+
+	//retn 8 at 6ff66b2d
+	/*target_addr = fog + 0x16B2D; 
+	VirtualProtect(target_addr, 1, PAGE_EXECUTE_READWRITE, &vp_old);
+	memcpy(target_addr, patch3, 1);
+	VirtualProtect(target_addr, 1, vp_old, &vp_old);*/
+
+	target_addr = fog + 0x16C88; 
 	VirtualProtect(target_addr, 5, PAGE_EXECUTE_READWRITE, &vp_old);
 	memcpy(target_addr, patch6, 5);
 	VirtualProtect(target_addr, 5, vp_old, &vp_old);
 
 	//wow thats a big shot, bypass QSHackList()
-	target_addr = fog + 0x0EC1D; 
+	target_addr = fog + 0x16BDD; 
 	VirtualProtect(target_addr, 2, PAGE_EXECUTE_READWRITE, &vp_old);
 	memcpy(target_addr, patch9, 2);
 	VirtualProtect(target_addr, 2, vp_old, &vp_old);
 
-	target_addr = fog + 0x205C6; 
+	//jmp to no result
+	/*target_addr = fog + 0x168DB; 
 	VirtualProtect(target_addr, 1, PAGE_EXECUTE_READWRITE, &vp_old);
 	memcpy(target_addr, patch3, 1);
 	VirtualProtect(target_addr, 1, vp_old, &vp_old);*/
-	/* we dont give a shit to that anymore, fake user IP! */
+
+	target_addr = fog + 0x202D6; 
+	VirtualProtect(target_addr, 1, PAGE_EXECUTE_READWRITE, &vp_old);
+	memcpy(target_addr, patch3, 1);
+	VirtualProtect(target_addr, 1, vp_old, &vp_old);
 
 	//patch d2ge hack
 	searchAndPatch(FindPlayerToken, 0xFFFF, pattern, 3, patch, 3);
@@ -464,40 +419,7 @@ void D2GEPatch(){
 	VirtualProtect(target_addr, 1, PAGE_READWRITE, &vp_old);
 	memcpy(target_addr, &patch7, 1);
 	VirtualProtect(target_addr, 1, vp_old, &vp_old);
-	
-	//stack incorrect
-	target_addr = 0x6FF5EC1D; 
-	VirtualProtect(target_addr, 2, PAGE_READWRITE, &vp_old);
-	memcpy(target_addr, &patch9, 2);
-	VirtualProtect(target_addr, 2, vp_old, &vp_old);
 
-	//patch QSServerNT working timer 1 (in order to be more effective)
-	/*target_addr = 0x6FF70817; 
-	VirtualProtect(target_addr, 1, PAGE_READWRITE, &vp_old);
-	memcpy(target_addr, &patch8, 1);
-	VirtualProtect(target_addr, 1, vp_old, &vp_old);
-
-	//patch QSServerNT working timer 2 (in order to be more effective)
-	target_addr = 0x6FF70A87; 
-	VirtualProtect(target_addr, 1, PAGE_READWRITE, &vp_old);
-	memcpy(target_addr, &patch8, 1);
-	VirtualProtect(target_addr, 1, vp_old, &vp_old);*/
-	//i dont think it should be used in production environment now
-
-	//patch SingleRoomDCPatch
-	//SOJCounter at 0x680145E8
-	addr_my_func = &SingleRoomDCPatch;
-	target_addr = 0x68021024; 
-	VirtualProtect(target_addr, 4, PAGE_READWRITE, &vp_old);
-	memcpy(target_addr, &addr_my_func, 4);
-	VirtualProtect(target_addr, 4, vp_old, &vp_old);
-
-	//patch SOJMessageChecker
-	addr_my_func = &SOJMsgChecker;
-	target_addr = 0x6802100C; //0x6800F980; //it's 0x68021024; 
-	VirtualProtect(target_addr, 4, PAGE_READWRITE, &vp_old);
-	memcpy(target_addr, &addr_my_func, 4);
-	VirtualProtect(target_addr, 4, vp_old, &vp_old);
 }
 
 short get_trunk_port()
@@ -507,6 +429,6 @@ short get_trunk_port()
 	int namelen = sizeof(struct sockaddr_in);
 	getsockname(trunk_s, &my_addr, &namelen);
 	port = ntohs(my_addr.sin_port);
-	D2GEEventLog(__FUNCTION__, "Server listen on port %d.", port);
+	D2GEEventLog(__FUNCTION__, "Server listen on port %d.", d2gsconf.listenaddr, port);
 	return port;
 }

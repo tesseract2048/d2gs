@@ -23,7 +23,6 @@
 #include "utils.h"
 #include "itemscan.h"
 #include "charstat.h"
-#include "d2ge.h"
 
 
 static D2GSPARAM	d2gsparam;
@@ -308,16 +307,6 @@ void D2GSHandleS2SPacket(D2GSPACKET *lpPacket)
 				return;
 			D2DBSKickRequest((LPVOID)(lpPacket->data));
 			break;
-		case D2DBS_D2GS_SOJ_COUNTER_UPDATE:
-			if (bn_ntohs(lpdbshead->size) < sizeof(t_d2dbs_d2gs_soj_counter_update))
-				return;
-			D2DBSSOJCounterUpdate((LPVOID)(lpPacket->data));
-			break;
-		case D2DBS_D2GS_DC_TRIGGER:
-			if (bn_ntohs(lpdbshead->size) < sizeof(t_d2dbs_d2gs_dc_trigger))
-				return;
-			D2DBSDCTrigger((LPVOID)(lpPacket->data));
-			break;
 		}
 	}
 
@@ -344,7 +333,7 @@ void D2GSAuthreq(LPVOID *lpdata)
 	RealmName[MAX_REALMNAME_LEN-1] = '\0';
 	strcpy(d2gsparam.realmname, RealmName);
 	/* reset motd */
-	sprintf(d2gsconf.roomMotd, "當前國度：%s，最大遊戲週期：%d秒。禁止使用除MapHack以外的任何外掛及遊戲輔助程序！", d2gsparam.realmname, d2gsconf.maxgamelife);
+	sprintf(d2gsconf.roomMotd, "Realm: %s, Max game duration: %d seconds. WARNING: No plugin is allowed except MapHack.", d2gsparam.realmname, d2gsconf.maxgamelife);
 	/* get session number */
 	d2gsparam.sessionnum = bn_ntohl(preq->sessionnum);
 	if ((strlen(RealmName)<=0)  || (strlen(RealmName)>=MAX_REALMNAME_LEN)) return;
@@ -453,21 +442,19 @@ void D2CSSetConfFile(LPVOID *lpdata)
 
 	fclose(fp);
 
-	/*GetPrivateProfileString("World Event", "Enable", "0", buf, 255, confpath);
+	GetPrivateProfileString("World Event", "Enable", "0", buf, 255, confpath);
 	if(strcmp(buf, "1") == 0){
 		GetPrivateProfileString("World Event", "Item", "key", buf, 255, confpath);
 		GetPrivateProfileString("World Event", "DcItemRate", "0", buf2, 255, confpath);
 		if(strcmp(buf2, "0") == 0){
-			sprintf(d2gsconf.eventmotd, "%sDC觸發模式：全國度觸發。DC Key物品為%s。", "%yellow%", buf);
+			sprintf(d2gsconf.eventmotd, "%sDC will spawn within realm, key is %s.", "%yellow%", buf);
 		}else{
 			dcrate = atoi(buf2) / 10;
-			sprintf(d2gsconf.eventmotd, "%sDC觸發模式：單房間觸發。DC Key物品為%s，觸發概率%d%%。", "%yellow%", buf, dcrate);
+			sprintf(d2gsconf.eventmotd, "%sDC will spawn within single game with %d%% probability, key is %s.", "%yellow%", dcrate, buf);
 		}
 	}else{
-		sprintf(d2gsconf.eventmotd, "%s當前服務器不支持DC觸發", "%yellow%", buf);
-	}*/
-	GetPrivateProfileString("World Event", "Item", "key", buf, 255, confpath);
-	sprintf(d2gsconf.eventmotd, "%sDC觸發模式：全戰網觸發。DC Key物品為%s。", "%yellow%", buf);
+		sprintf(d2gsconf.eventmotd, "%sDC will not spawn in any case.", "%yellow%", buf);
+	}
 
 	D2GSEventLog(__FUNCTION__, "D2server.ini saved as %s", confpath);
 
@@ -769,27 +756,6 @@ BOOL D2GSCBFindPlayerToken(LPCSTR lpCharName, DWORD dwToken, DWORD dwGameId,
 	if (!lpCharName || !lpAccountName || !lpPlayerData) return FALSE;
 
 	EnterCriticalSection(&csGameList);
-#ifdef _STRESS_TEST
-	lpGame = D2GSFindGameInfoByGameName(lpCharName);
-	strncpy(lpAccountName, lpCharName, MAX_ACCTNAME_LEN);
-	strncpy(_IpAddr, "127.0.0.1", MAX_IPADDR_LEN);
-	vip_expire = 0;
-	*lpPlayerData = (PLAYERDATA)0x01;
-	if ((val=D2GSInsertCharIntoGameInfo(lpGame, dwToken,
-			(UCHAR *)lpAccountName, (UCHAR *)lpCharName, _IpAddr, 0, 0, FALSE, vip_expire))!=0)
-	{
-		D2GSEventLog("D2GSCBFindPlayerToken",
-			"failed insert into char list for %s(*%s) to game '%s'(%u), code: %d",
-			lpCharName, lpAccountName, lpGame->GameName, lpGame->GameId, val);
-		LeaveCriticalSection(&csGameList);
-		return FALSE;
-	}
-	LeaveCriticalSection(&csGameList);
-	D2GSEventLog("D2GSCBFindPlayerToken",
-		"Found token of %s(*%s) for game '%s'(%u)",
-		lpCharName, lpAccountName, lpGame->GameName, lpGame->GameId);
-	return TRUE;
-#else
 	lpChar = D2GSFindPendingCharByCharName((UCHAR *)lpCharName);
 	if (!lpChar) {
 		LeaveCriticalSection(&csGameList);
@@ -855,7 +821,6 @@ BOOL D2GSCBFindPlayerToken(LPCSTR lpCharName, DWORD dwToken, DWORD dwGameId,
 	D2GSEventLog("D2GSCBFindPlayerToken",
 		"Found token of %s(*%s) for game '%s'(%u)",
 		lpCharName, lpAccountName, lpGame->GameName, lpGame->GameId);
-#endif
 	LeaveCriticalSection(&csGameList);
 	return TRUE;
 
@@ -1201,6 +1166,7 @@ void D2GSCBUpdateGameInformation(DWORD dwGameId, LPCSTR lpCharName,
 
 } /* End of D2GSCBUpdateGameInformation() */
 
+
 /*********************************************************************
  * Purpose: GetDatabaseCharacter
  * Return:  None
@@ -1216,10 +1182,6 @@ void D2GSCBGetDatabaseCharacter(LPGAMEDATA lpGameData, LPCSTR lpCharName,
 	D2GAMEINFO						*lpGameInfo;
 	D2CHARINFO						*lpCharInfo;
 
-#ifdef _STRESS_TEST
-	seqno = D2GSGetSequence();
-	D2GSInsertGetDataRequest((UCHAR*)lpAccountName, (UCHAR*)lpCharName, dwClientId, seqno);
-#else
 	EnterCriticalSection(&csGameList);
 
 	/* insert request info list */
@@ -1274,7 +1236,7 @@ succ:
 	D2GSNetSendPacket(&packet);
 	D2GSEventLog("D2GSCBGetDatabaseCharacter",
 		"Send GetDataRequest to D2DBS for %s(*%s)", lpCharName, lpAccountName);
-#endif
+
 	return;
 
 } /* End of D2GSCBGetDatabaseCharacter() */
@@ -1300,9 +1262,6 @@ void D2GSCBSaveDatabaseCharacter(LPGAMEDATA lpGameData, LPCSTR lpCharName,
 	char							ipaddr[32];
 	struct t_scan_result scan_result = scandata(lpSaveData, dwSize);
 	struct t_scan_result scan_result_dump = scan_result;
-#ifdef _STRESS_TEST
-	return;
-#else
 	org_ist = scan_result.ist;
 	gamenamefix[0] = 0;
 	lpChar = (D2CHARINFO*)charlist_getdata(lpCharName, CHARLIST_GET_CHARINFO);
@@ -1357,7 +1316,7 @@ void D2GSCBSaveDatabaseCharacter(LPGAMEDATA lpGameData, LPCSTR lpCharName,
 	D2GSEventLog("D2GSCBSaveDatabaseCharacter", "Save CHARSAVE for %s(*%s)",
 		lpCharName, lpAccountName);
 	return;
-#endif
+
 } /* End of D2GSCBSaveDatabaseCharacter() */
 
 
@@ -1824,50 +1783,5 @@ void SendEmergency(int emergency_type, int param)
 	preq->h.seqno  = 0;
 	packet.datalen = size;
 	packet.peer    = PACKET_PEER_SEND_TO_D2DBS;
-	D2GSNetSendPacket(&packet);
-}
-
-void D2DBSSOJCounterUpdate(LPVOID *lpdata)
-{
-	t_d2dbs_d2gs_soj_counter_update	*preply;
-
-	preply = (t_d2dbs_d2gs_soj_counter_update*)lpdata;
-	D2GSSOJCounterUpdate(bn_ntohl(preply->soj_counter));
-	return;
-}
-
-void D2DBSDCTrigger(LPVOID *lpdata)
-{
-	D2GSDCTrigger();
-	return;
-}
-
-static int tmp_soj_counter = 0;
-
-void IncreaseSOJCounter(int step)
-{
-	tmp_soj_counter += step;
-}
-
-void SendSOJCounter()
-{
-	int counter = tmp_soj_counter;
-	D2GSPACKET						packet;
-	t_d2gs_d2dbs_soj_counter_update *preq;
-	int size;
-	char* ptr;
-	if (!d2gsparam.gsactive) return;
-	tmp_soj_counter = 0;
-	preq = (t_d2gs_d2dbs_soj_counter_update*)(packet.data);
-	ZeroMemory(&packet, sizeof(packet));
-	size = sizeof(t_d2gs_d2dbs_soj_counter_update) + strlen(d2gsparam.realmname) + 1;
-	preq->increment = counter;
-	preq->h.type   = bn_htons(D2GS_D2DBS_SOJ_COUNTER_UPDATE);
-	preq->h.size   = bn_htons(size);
-	preq->h.seqno  = 0;
-	packet.datalen = size;
-	packet.peer    = PACKET_PEER_SEND_TO_D2DBS;
-	ptr = packet.data + sizeof(t_d2gs_d2dbs_soj_counter_update);
-	strcpy(ptr, d2gsparam.realmname);
 	D2GSNetSendPacket(&packet);
 }

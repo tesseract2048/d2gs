@@ -1,6 +1,7 @@
 #ifndef INCLUDED_EVENTLOG_H
 #define INCLUDED_EVENTLOG_H
-
+#include <stdio.h>
+#include <Windows.h>
 
 #define EVENT_TIME_FORMAT "% %d %H:%M:%S"
 #define EVENT_TIME_MAXLEN 48

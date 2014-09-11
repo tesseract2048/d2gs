@@ -40,7 +40,6 @@ static LONG WINAPI except_handler(PEXCEPTION_POINTERS lpEP);
 /********************************************************************************
  * Main procedure begins here
  ********************************************************************************/
-
 #ifdef _DEBUG
 int main(int argc, char **argv)
 #else
@@ -53,8 +52,14 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInst, LPSTR lpCmdLine, in
 	HANDLE	handle;
 	int i;
 	int size;
-
 	SetUnhandledExceptionFilter(except_handler);
+
+	/* reset cleanup routine list */
+	pCleanupRT = NULL;
+
+	/* init log system first */
+	if (!D2GSEventLogInitialize()) return -1;
+	
 	GetModuleFileName(NULL, curr_dir, 255);
 	for(i = strlen(curr_dir) - 1; i >= 0; i --)
 	{
@@ -67,21 +72,17 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInst, LPSTR lpCmdLine, in
 	handle = CreateFile(patch_d2, FILE_GENERIC_READ, FILE_SHARE_READ, 0, OPEN_EXISTING, 0, 0);
 	if (handle == INVALID_HANDLE_VALUE)
 	{
-		return -1;
+		D2GSEventLog("main", "no Patch_D2.MPQ found");
+		//return -1;
 	}
 	size = GetFileSize(handle, NULL);
-	if (size != 4153804)
+	if (size != 2399610)
 	{
-		CloseHandle(handle);
-		return -1;
+		D2GSEventLog("main", "Patch_D2.MPQ has incorrect size, should be 2399610");
+		//CloseHandle(handle);
+		//return -1;
 	}
 	CloseHandle(handle);
-
-	/* reset cleanup routine list */
-	pCleanupRT = NULL;
-
-	/* init log system first */
-	if (!D2GSEventLogInitialize()) return -1;
 
 	//memcpy(0x2134, &hD2GSMutex, 256);
 	/* setup signal capture */
@@ -104,7 +105,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInst, LPSTR lpCmdLine, in
 		return -1;
 	}
 
-	sprintf(d2gsconf.versionMotd, "šgÓ­ßMÈë91D2°µºÚ‘ð¾W°µºÚ1.13cß[‘ò·þ„ÕÆ÷£¬Ü›¼þ¾Ž×g•rég£º%s", BUILDDATE);
+	sprintf(d2gsconf.versionMotd, "Welcome to 91D2. Nice hunting!", BUILDDATE);
 
 	/* read configurations */
 	if (!D2GSReadConfig()) {
@@ -142,7 +143,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInst, LPSTR lpCmdLine, in
 
 	/* main server loop */
 	D2GSEventLog("main", "Entering Main Server Loop");
-	
+
 	while(TRUE) {
 		dwWait = WaitForSingleObject(hStopEvent, 1000);
 		if (dwWait!=WAIT_OBJECT_0) continue;

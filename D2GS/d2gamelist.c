@@ -313,15 +313,17 @@ int D2GSInsertCharIntoGameInfo(D2GAMEINFO *lpGameInfo, DWORD token, UCHAR *AcctN
 	lpCharInfo->ClientId       = 0;
 	lpCharInfo->vip_expire     = vip_expire;
 
+
+	EnterCriticalSection(&csGameList);
+
 	/* insert char into char list table */
 	if ((val=charlist_insert(CharName, lpCharInfo, lpGameInfo))!=0) {
 		D2GSEventLog("D2GSInsertCharIntoGameInfo",
 				"failed insert info charlist for %s(*%s), code: %d", CharName, AcctName, val);
 		free(lpCharInfo);
+		LeaveCriticalSection(&csGameList);
 		return D2GSERROR_CHAR_ALREADY_IN_GAME;
 	}
-
-	EnterCriticalSection(&csGameList);
 
 	/* add to game info */
 	lpTemp = lpGameInfo->lpCharInfo;
@@ -698,20 +700,6 @@ void D2GSPendingCharTimerRoutine(void)
  * Purpose: to do sth in the timer for get data request list
  * Return: None
  *********************************************************************/
-
-
-char stressTestSaveData[] = {
-	0x55, 0xAA, 0x55, 0xAA, 0x59, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x3F, 0x01, 0x10, 0x00, 
-	0x82, 0x00, 0x00, 0x00, 0x01, 0x00, 0x01, 0x01, 0x01, 0x01, 0x01, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 
-	0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 
-	0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 
-	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 
-	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 
-	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 
-	0x00, 0x00
-};
-
 void D2GSGetDataRequestTimerRoutine(void)
 {
 	D2GETDATAREQUEST	*lpGetDataReq, *lpTimeOutReq, *lpTimeOutReqs[512];
@@ -723,30 +711,6 @@ void D2GSGetDataRequestTimerRoutine(void)
 	int					reqNum = 0;
 	int					i;
 
-#if _STRESS_TEST
-	EnterCriticalSection(&csGameList);
-	lpGetDataReq = lpGetDataReqHead;
-	while(lpGetDataReq) 
-	{
-		PLAYERINFO						PlayerInfo;
-		char data[130];
-		memcpy(data, stressTestSaveData, 130);
-		data[0x22] = 0x00;
-		data[0x18] = 0x01 | 0x20 | 0x40;
-		strcpy(&data[0x08], (char*)lpGetDataReq->CharName);
-		PlayerInfo.PlayerMark = 0;
-		PlayerInfo.dwReserved = 0;
-		memcpy(PlayerInfo.CharName, lpGetDataReq->CharName, MAX_CHARNAME_LEN);
-		memcpy(PlayerInfo.AcctName, lpGetDataReq->CharName, MAX_ACCTNAME_LEN);
-		D2GSSendDatabaseCharacter(lpGetDataReq->ClientId, data, 130, 130, FALSE, 0, &PlayerInfo, 0x1);
-		lpGetDataReq = lpGetDataReq->next;
-		if (lpGetDataReq)
-			free(lpGetDataReq->prev);
-	}
-	lpGetDataReqHead = NULL;
-	LeaveCriticalSection(&csGameList);
-	return;
-#endif
 	EnterCriticalSection(&csGameList);
 	lpGetDataReq = lpGetDataReqHead;
 	while(lpGetDataReq)
@@ -761,7 +725,6 @@ void D2GSGetDataRequestTimerRoutine(void)
 	{
 		lpTimeOutReq = lpTimeOutReqs[i];
 		dwClientId = lpTimeOutReq->ClientId;
-		
 		D2GSSendDatabaseCharacter(dwClientId, NULL, 0, 0, TRUE, 0, NULL, 1);
 		D2GSEventLog("D2GSGetDataRequestTimerRoutine",
 			"Failed get CHARSAVE data for '%s'(*%s)",
@@ -999,7 +962,7 @@ int D2GSSendMOTD(void)
 				strcpy(buf,"?");
 			else
 				strftime(buf,sizeof(buf),"%Y-%m-%d %H:%M:%S",tmnow);
-			sprintf(motdbuf, "您的暗金帳號到期時間為%s，感謝您對91D2的支持。", buf, pmotd->vip_expire);
+			sprintf(motdbuf, "Your unique account expires on %s, thanks for appreciate.", buf, pmotd->vip_expire);
 			chat_message_announce_char3(CHAT_MESSAGE_TYPE_SYS_MESSAGE, pmotd->ClientId, motdbuf, D2COLOR_ID_GREEN);
 		}
 		//sprintf(motdbuf, "91D2-GSTrunk: Currently on GE %d", geinfo->id);

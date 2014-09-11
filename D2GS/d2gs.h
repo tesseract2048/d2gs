@@ -8,7 +8,6 @@
 #ifndef INCLUDED_D2GS_H
 #define INCLUDED_D2GS_H
 
-//#define _STRESS_TEST 1
 
 #include <windows.h>
 
@@ -19,13 +18,13 @@
 #define D2GSERVER					0x04
 
 /* version */
-#define D2GS_VERSION				0x01130000
-#define VERNUM						"1.13c"
+#define D2GS_VERSION				0x01110000
+#define VERNUM						"1.11b"
 #define BUILDDATE					__DATE__ " " __TIME__
 #define D2GS_VERSION_STRING			D2COLOR_GOLDEN "D2GS Version " VERNUM ", build on " BUILDDATE
 
-#define D2GSERVER_MUTEX_NAME			"DIABLO_II_CLOSE_GAME_SERVER_13"
-#define D2GS_STOP_EVENT_NAME			"D2GSERVER_WHO_STOP_ME_13"
+#define D2GSERVER_MUTEX_NAME			"DIABLO_II_CLOSE_GAME_SERVER"
+#define D2GS_STOP_EVENT_NAME			"D2GSERVER_WHO_STOP_ME"
 #define DEFAULT_D2CS_PORT				6112
 #define DEFAULT_D2DBS_PORT				6113
 #define DEFAULT_ADMIN_PORT				8888

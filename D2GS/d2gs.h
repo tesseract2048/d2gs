@@ -18,8 +18,8 @@
 #define D2GSERVER					0x04
 
 /* version */
-#define D2GS_VERSION				0x01110000
-#define VERNUM						"1.11b"
+#define D2GS_VERSION				0x01130000
+#define VERNUM						"1.13c"
 #define BUILDDATE					__DATE__ " " __TIME__
 #define D2GS_VERSION_STRING			D2COLOR_GOLDEN "D2GS Version " VERNUM ", build on " BUILDDATE
 

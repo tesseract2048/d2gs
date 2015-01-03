@@ -140,16 +140,21 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="callback.c" />
+    <ClCompile Include="client.c" />
     <ClCompile Include="d2ge.c" />
     <ClCompile Include="eventlog.c" />
+    <ClCompile Include="hp.c" />
     <ClCompile Include="main.c" />
     <ClCompile Include="net.c" />
+    <ClCompile Include="queue.c" />
     <ClCompile Include="utils.c" />
     <ClCompile Include="vars.c" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="bn_types.h" />
     <ClInclude Include="callback.h" />
+    <ClInclude Include="client.h" />
+    <ClInclude Include="d2game_protocol.h" />
     <ClInclude Include="d2gelib\colorcode.h" />
     <ClInclude Include="config.h" />
     <ClInclude Include="d2ge.h" />
@@ -158,8 +163,10 @@
     <ClInclude Include="D2GElib\d2server.h" />
     <ClInclude Include="eventlog.h" />
     <ClInclude Include="handle_s2s.h" />
+    <ClInclude Include="hp.h" />
     <ClInclude Include="net.h" />
     <ClInclude Include="psapi.h" />
+    <ClInclude Include="queue.h" />
     <ClInclude Include="utils.h" />
     <ClInclude Include="vars.h" />
   </ItemGroup>

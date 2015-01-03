@@ -99,7 +99,6 @@ DWORD WINAPI D2GSTimerProcessor(LPVOID lpParameter)
 			DWORD x;*/
 			/* a tick passed, call the routine to do something */
 			WaitSeq ++;
-			WaitSeq2 ++;
 			D2GSPendingCharTimerRoutine();
 			D2GSGetDataRequestTimerRoutine();
 			D2GSCalculateNetStatistic();
@@ -116,11 +115,6 @@ DWORD WINAPI D2GSTimerProcessor(LPVOID lpParameter)
 			{
 				D2GSCheckGameLife();
 				WaitSeq = 0;
-			}
-			if (WaitSeq2 > 100)
-			{
-				SendSOJCounter();
-				WaitSeq2 = 0;
 			}
 			S2STick();
 		} else {

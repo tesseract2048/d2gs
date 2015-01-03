@@ -1,7 +1,7 @@
 #ifndef INCLUDED_NET_H
 #define INCLUDED_NET_H
 
-int   D2GSNetInitialize(void);
+int   D2GSNetInitialize(int geid);
 void send_leavegame(LPGAMEDATA lpGameData, WORD wGameId, WORD wCharClass, 
 					DWORD dwCharLevel, DWORD dwExpLow, DWORD dwExpHigh,
 					WORD wCharStatus, LPCSTR lpCharName, LPCSTR lpCharPortrait,

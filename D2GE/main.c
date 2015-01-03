@@ -16,15 +16,11 @@
 #include "config.h"
 #include "d2ge.h"
 #include "net.h"
+#include "client.h"
+#include "hp.h"
 
 /* CTRL+C or CTRL+Break signal handler */
 BOOL WINAPI ControlHandler(DWORD dwCtrlType);
-
-DWORD WINAPI DCStressTest(LPVOID lpParam)
-{
-	while(1)
-	send_soj_counter_update(1);
-}
 
 /********************************************************************************
  * Main procedure begins here
@@ -49,6 +45,12 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInst, LPSTR lpCmdLine, in
 	/* setup signal capture */
 	SetConsoleCtrlHandler(ControlHandler, TRUE);
 	
+	/* init client */
+	init_client();
+
+	/* init hack prevent */
+	hp_init();
+
 	/* initialize the net connection */
 	if (!D2GSNetInitialize(geid)) {
 		D2GEEventLog("main", "Failed Startup Net Connector");

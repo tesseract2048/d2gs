@@ -25,6 +25,7 @@ int D2GSNewEmptyGame(LPCSTR lpGameName, LPCSTR lpGamePass,
 					BYTE bReserved2, LPWORD pwGameId);
 DWORD D2GSSendClientChatMessage(DWORD dwClientId,
 		DWORD dwType, DWORD dwColor, LPCSTR lpName, LPCSTR lpText);
+void D2GSNewClientComing(struct GEINFO* ge, SOCKET s);
 struct GEINFO* GetClientIdOnGE(int dwClientId);
 struct GEINFO* GetGEById(int d2ge_id);
 

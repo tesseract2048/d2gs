@@ -8,6 +8,7 @@
 #include "net.h"
 #include "vars.h"
 #include "../D2GS/d2gs_d2ge_protocol.h"
+#include "client.h"
 
 #define SEQ_TABLE_SIZE 1024
 
@@ -23,9 +24,6 @@ static unsigned long			seqcount = 0;
 static void *					seqtable[SEQ_TABLE_SIZE];
 static CRITICAL_SECTION			packetHandler;
 static CRITICAL_SECTION			packetSender;
-
-extern FILE *gestrm;
-void hexdump(void const * data, unsigned int len);
 
 BOOL SendGSPacket(char* buf, int len){
 	int nBytesLeft = len;
@@ -140,17 +138,6 @@ void handle_callback(char* buf, int size)
 	t_d2gs_d2ge_header *rtn = result;
 	memcpy(result, buf, size);
 	seqtable[rtn->seqno%SEQ_TABLE_SIZE] = result;
-}
-
-void handle_dc_trigger(char* buf, int size)
-{
-	TriggerDC();
-}
-
-void handle_soj_counter_update(char* buf, int size)
-{
-	t_d2gs_d2ge_soj_counter_update *packet = buf;
-	ShowSOJMsg(packet->soj_counter);
 }
 
 BOOL send_findtoken(LPCSTR lpCharName, DWORD dwToken, WORD wGameId,
@@ -305,58 +292,11 @@ void send_leavegame(LPGAMEDATA lpGameData, WORD wGameId, WORD wCharClass,
 	free(buf);
 };
 
-void send_soj_counter_update(int increment)
+void handle_incoming_client(char* buf)
 {
-	t_d2ge_d2gs_soj_counter_update packet;
-	packet.h.seqno = InterlockedIncrement(&seqcount);
-	packet.h.type = D2GE_D2GS_SOJ_COUNTER_UPDATE;
-	packet.increment = increment;
-	SendGSPacket(&packet, sizeof(t_d2ge_d2gs_soj_counter_update));
-};
-
-void hexdump(void const * data, unsigned int len)
-{
-    unsigned int i;
-    unsigned int r,c;
-    FILE* gestrm = getstrm();
-	if (!gestrm)
-        return;
-    if (!data)
-        return;
-    
-    for (r=0,i=0; r<(len/16+(len%16!=0)); r++,i+=16)
-    {
-        fprintf(gestrm,"%04X:   ",i); /* location of first byte in line */
-
-        for (c=i; c<i+8; c++) /* left half of hex dump */
-            if (c<len)
-                fprintf(gestrm,"%02X ",((unsigned char const *)data)[c]);
-            else
-                fprintf(gestrm,"   "); /* pad if short line */
-
-        fprintf(gestrm,"  ");
-
-        for (c=i+8; c<i+16; c++) /* right half of hex dump */
-            if (c<len)
-                fprintf(gestrm,"%02X ",((unsigned char const *)data)[c]);
-            else
-                fprintf(gestrm,"   "); /* pad if short line */
-
-        fprintf(gestrm,"   ");
-
-        for (c=i; c<i+16; c++) /* ASCII dump */
-            if (c<len)
-                if (((unsigned char const *)data)[c]>=32 &&
-                    ((unsigned char const *)data)[c]<127)
-                    fprintf(gestrm,"%c",((char const *)data)[c]);
-                else
-                    fprintf(gestrm,"."); /* put this for non-printables */
-            else
-                fprintf(gestrm," "); /* pad if short line */
-
-        fprintf(gestrm,"\n");
-    }
-    fflush(gestrm);
+	t_d2gs_d2ge_incoming_client *packet = buf;
+	push_client((SOCKET)packet->s);
+	D2GEEventLog(__FUNCTION__, "Incoming client (socket: 0x%x) received", (int)packet->s);
 }
 DWORD WINAPI GECommThread()
 {
@@ -425,13 +365,9 @@ DWORD WINAPI GECommThread()
 				//D2GEEventLog(__FUNCTION__, "D2GS_D2GE_FINDTOKEN_CALLBACK");
 				handle_callback(buf, sizeof(t_d2gs_d2ge_findtoken_callback));
 				break;
-			case D2GS_D2GE_DC_TRIGGER:
-				handle_dc_trigger(buf, sizeof(t_d2gs_d2ge_dc_trigger));
+			case D2GS_D2GE_INCOMING_CLIENT:
+				handle_incoming_client(buf);
 				break;
-			case D2GS_D2GE_SOJ_COUNTER_UPDATE:
-				handle_soj_counter_update(buf, sizeof(t_d2gs_d2ge_soj_counter_update));
-				break;
-
 			}
 			LeaveCriticalSection(&packetHandler);
 			inpacket = FALSE;

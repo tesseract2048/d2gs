@@ -452,12 +452,6 @@ void handle_findtoken(SOCKET client, char* buf, struct GEINFO* geinfo)
 	SendGEPacket(geinfo, &rpacket, sizeof(t_d2gs_d2ge_findtoken_callback));
 }
 
-void handle_soj_counter_update(SOCKET client, char* buf, struct GEINFO* geinfo)
-{
-	t_d2ge_d2gs_soj_counter_update *packet = buf;
-	IncreaseSOJCounter(packet->increment);
-}
-
 DWORD WINAPI GECommThread(LPVOID lpParam)
 {
 	struct GEINFO* geinfo = NULL;
@@ -554,9 +548,6 @@ DWORD WINAPI GECommThread(LPVOID lpParam)
 				//D2GSEventLog(__FUNCTION__, "D2GE_D2GS_UPDATEINFO");
 				handle_updateinfo(client, buf, geinfo);
 				break;
-			case D2GE_D2GS_SOJ_COUNTER_UPDATE:
-				handle_soj_counter_update(client, buf, geinfo);
-				break;
 			}
 			LeaveCriticalSection(&packetHandler);
 			inpacket = FALSE;
@@ -591,45 +582,6 @@ void D2GSEndAllGames(){
 			packet.h.seqno = InterlockedIncrement(&seqcount);
 			packet.h.type = D2GS_D2GE_ENDALLGAMES;
 			SendGEPacket(ge_list, &packet, sizeof(t_d2gs_d2ge_endallgames));
-		}
-		ge_list = ge_list->next;
-	}
-	LeaveCriticalSection(&GEList);
-}
-
-void D2GSDCTrigger(){
-	struct GEINFO* ge_list = ge_head;
-	EnterCriticalSection(&GEList);
-	while(ge_list)
-	{
-		if (ge_list->enabled && ge_list->max_game > 0)
-		{
-			t_d2gs_d2ge_dc_trigger packet;
-			packet.h.seqno = InterlockedIncrement(&seqcount);
-			packet.h.type = D2GS_D2GE_DC_TRIGGER;
-			SendGEPacket(ge_list, &packet, sizeof(t_d2gs_d2ge_dc_trigger));
-		}
-		ge_list = ge_list->next;
-	}
-	LeaveCriticalSection(&GEList);
-}
-
-static int last_soj_counter = 0;
-
-void D2GSSOJCounterUpdate(int soj_counter){
-	struct GEINFO* ge_list = ge_head;
-	if (soj_counter == last_soj_counter) return;
-	last_soj_counter = soj_counter;
-	EnterCriticalSection(&GEList);
-	while(ge_list)
-	{
-		if (ge_list->enabled && ge_list->max_game > 0)
-		{
-			t_d2gs_d2ge_soj_counter_update packet;
-			packet.h.seqno = InterlockedIncrement(&seqcount);
-			packet.h.type = D2GS_D2GE_SOJ_COUNTER_UPDATE;
-			packet.soj_counter = soj_counter;
-			SendGEPacket(ge_list, &packet, sizeof(t_d2gs_d2ge_soj_counter_update));
 		}
 		ge_list = ge_list->next;
 	}
@@ -795,4 +747,13 @@ DWORD D2GSSendClientChatMessage(DWORD dwClientId, DWORD dwType, DWORD dwColor, L
 	//	rtn = FALSE;
 	//}
 	return rtn;
+}
+
+void D2GSNewClientComing(struct GEINFO* ge, SOCKET s) {
+	t_d2gs_d2ge_incoming_client packet;
+	packet.h.seqno = InterlockedIncrement(&seqcount);
+	packet.h.type = D2GS_D2GE_INCOMING_CLIENT;
+	packet.s = s;
+ 	SendGEPacket(ge, (char*)&packet, sizeof(t_d2gs_d2ge_incoming_client));
+ 	D2GSEventLog(__FUNCTION__, "Incoming client (socket: 0x%x) sent to GE", (int)s);
 }

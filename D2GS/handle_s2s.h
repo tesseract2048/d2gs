@@ -71,9 +71,5 @@ void S2STick();
 void SendPerformanceCounter(int busy_pool, int idle_pool, int thread_num, int handle_num, int ge_num);
 void SendRateExceeded(int request_rate, LPCSTR account, LPCSTR charname, LPCSTR ipaddr);
 void SendEmergency(int emergency_type, int param);
-void D2DBSSOJCounterUpdate(LPVOID *lpdata);
-void D2DBSDCTrigger(LPVOID *lpdata);
-void IncreaseSOJCounter(int step);
-void SendSOJCounter();
 
 #endif /* INCLUDED_HANDLE_S2S_H */

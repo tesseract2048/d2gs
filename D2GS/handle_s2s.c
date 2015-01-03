@@ -308,16 +308,6 @@ void D2GSHandleS2SPacket(D2GSPACKET *lpPacket)
 				return;
 			D2DBSKickRequest((LPVOID)(lpPacket->data));
 			break;
-		case D2DBS_D2GS_SOJ_COUNTER_UPDATE:
-			if (bn_ntohs(lpdbshead->size) < sizeof(t_d2dbs_d2gs_soj_counter_update))
-				return;
-			D2DBSSOJCounterUpdate((LPVOID)(lpPacket->data));
-			break;
-		case D2DBS_D2GS_DC_TRIGGER:
-			if (bn_ntohs(lpdbshead->size) < sizeof(t_d2dbs_d2gs_dc_trigger))
-				return;
-			D2DBSDCTrigger((LPVOID)(lpPacket->data));
-			break;
 		}
 	}
 
@@ -1824,50 +1814,5 @@ void SendEmergency(int emergency_type, int param)
 	preq->h.seqno  = 0;
 	packet.datalen = size;
 	packet.peer    = PACKET_PEER_SEND_TO_D2DBS;
-	D2GSNetSendPacket(&packet);
-}
-
-void D2DBSSOJCounterUpdate(LPVOID *lpdata)
-{
-	t_d2dbs_d2gs_soj_counter_update	*preply;
-
-	preply = (t_d2dbs_d2gs_soj_counter_update*)lpdata;
-	D2GSSOJCounterUpdate(bn_ntohl(preply->soj_counter));
-	return;
-}
-
-void D2DBSDCTrigger(LPVOID *lpdata)
-{
-	D2GSDCTrigger();
-	return;
-}
-
-static int tmp_soj_counter = 0;
-
-void IncreaseSOJCounter(int step)
-{
-	tmp_soj_counter += step;
-}
-
-void SendSOJCounter()
-{
-	int counter = tmp_soj_counter;
-	D2GSPACKET						packet;
-	t_d2gs_d2dbs_soj_counter_update *preq;
-	int size;
-	char* ptr;
-	if (!d2gsparam.gsactive) return;
-	tmp_soj_counter = 0;
-	preq = (t_d2gs_d2dbs_soj_counter_update*)(packet.data);
-	ZeroMemory(&packet, sizeof(packet));
-	size = sizeof(t_d2gs_d2dbs_soj_counter_update) + strlen(d2gsparam.realmname) + 1;
-	preq->increment = counter;
-	preq->h.type   = bn_htons(D2GS_D2DBS_SOJ_COUNTER_UPDATE);
-	preq->h.size   = bn_htons(size);
-	preq->h.seqno  = 0;
-	packet.datalen = size;
-	packet.peer    = PACKET_PEER_SEND_TO_D2DBS;
-	ptr = packet.data + sizeof(t_d2gs_d2dbs_soj_counter_update);
-	strcpy(ptr, d2gsparam.realmname);
 	D2GSNetSendPacket(&packet);
 }

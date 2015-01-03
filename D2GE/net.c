@@ -8,7 +8,6 @@
 #include "net.h"
 #include "vars.h"
 #include "../D2GS/d2gs_d2ge_protocol.h"
-#include "client.h"
 
 #define SEQ_TABLE_SIZE 1024
 
@@ -109,6 +108,7 @@ void handle_sendchar(char* buf)
 	rpacket.h.type = D2GE_D2GS_SENDCHAR_RETURN;
 	rpacket.h.seqno = packet->h.seqno;
 	rpacket.result = D2GSSendDatabaseCharacter(packet->dwClientId, data, packet->dwSize, packet->dwTotalSize, packet->bLock, packet->dwReserved1, pi, packet->dwReserved2);
+	//printf("Sending SENDCHAR return %d\n", rpacket.h.seqno);
 	SendGSPacket(&rpacket, sizeof(t_d2ge_d2gs_sendchar_return));
 }
 
@@ -142,11 +142,15 @@ void handle_callback(char* buf, int size)
 	seqtable[rtn->seqno%SEQ_TABLE_SIZE] = result;
 }
 
-void handle_incoming_client(char* buf)
+void handle_dc_trigger(char* buf, int size)
 {
-	t_d2gs_d2ge_incoming_client *packet = buf;
-	push_client((SOCKET)packet->s);
-	D2GEEventLog(__FUNCTION__, "Incoming client (socket: 0x%x) received", (int)packet->s);
+	TriggerDC();
+}
+
+void handle_soj_counter_update(char* buf, int size)
+{
+	t_d2gs_d2ge_soj_counter_update *packet = buf;
+	ShowSOJMsg(packet->soj_counter);
 }
 
 BOOL send_findtoken(LPCSTR lpCharName, DWORD dwToken, WORD wGameId,
@@ -301,6 +305,15 @@ void send_leavegame(LPGAMEDATA lpGameData, WORD wGameId, WORD wCharClass,
 	free(buf);
 };
 
+void send_soj_counter_update(int increment)
+{
+	t_d2ge_d2gs_soj_counter_update packet;
+	packet.h.seqno = InterlockedIncrement(&seqcount);
+	packet.h.type = D2GE_D2GS_SOJ_COUNTER_UPDATE;
+	packet.increment = increment;
+	SendGSPacket(&packet, sizeof(t_d2ge_d2gs_soj_counter_update));
+};
+
 void hexdump(void const * data, unsigned int len)
 {
     unsigned int i;
@@ -412,9 +425,13 @@ DWORD WINAPI GECommThread()
 				//D2GEEventLog(__FUNCTION__, "D2GS_D2GE_FINDTOKEN_CALLBACK");
 				handle_callback(buf, sizeof(t_d2gs_d2ge_findtoken_callback));
 				break;
-			case D2GS_D2GE_INCOMING_CLIENT:
-				handle_incoming_client(buf);
+			case D2GS_D2GE_DC_TRIGGER:
+				handle_dc_trigger(buf, sizeof(t_d2gs_d2ge_dc_trigger));
 				break;
+			case D2GS_D2GE_SOJ_COUNTER_UPDATE:
+				handle_soj_counter_update(buf, sizeof(t_d2gs_d2ge_soj_counter_update));
+				break;
+
 			}
 			LeaveCriticalSection(&packetHandler);
 			inpacket = FALSE;
@@ -442,7 +459,7 @@ int D2GSNetInitialize(int d2ge_id)
 	InitializeCriticalSection(&packetHandler);
 	InitializeCriticalSection(&packetSender);
 	gs.sin_family = AF_INET;
-	gs.sin_port = htons(12834);
+	gs.sin_port = htons(12835);
 	gs.sin_addr.s_addr = inet_addr("127.0.0.1");
 	memset(gs.sin_zero, 0 ,8);
 	if((ge_comm = socket(AF_INET, SOCK_STREAM, 0)) == INVALID_SOCKET)

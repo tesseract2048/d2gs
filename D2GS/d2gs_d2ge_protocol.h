@@ -213,12 +213,25 @@ typedef struct
 	DWORD				dwCharLevel;
 } t_d2ge_d2gs_updateinfo;
 
-#define D2GS_D2GE_INCOMING_CLIENT 0x88
+#define D2GS_D2GE_DC_TRIGGER 0x90
 typedef struct
 {
 	t_d2gs_d2ge_header	h;
-	SOCKET				s;
-} t_d2gs_d2ge_incoming_client;
+} t_d2gs_d2ge_dc_trigger;
+
+#define D2GE_D2GS_SOJ_COUNTER_UPDATE 0x91
+typedef struct
+{
+	t_d2gs_d2ge_header	h;
+	int increment;
+} t_d2ge_d2gs_soj_counter_update;
+
+#define D2GS_D2GE_SOJ_COUNTER_UPDATE 0x92
+typedef struct
+{
+	t_d2gs_d2ge_header	h;
+	int soj_counter;
+} t_d2gs_d2ge_soj_counter_update;
 
 #pragma pack(pop, pack01)
 

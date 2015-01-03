@@ -2,3 +2,6 @@
 *.sdf
 *.ncb
 .DS_Store
+Debug
+Release
+obj

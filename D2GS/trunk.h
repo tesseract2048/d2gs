@@ -1,81 +1,11 @@
 #ifndef INCLUDED_TRUNK_H
 #define INCLUDED_TRUNK_H
 
-#define MaxClient 4096
-#define RecvBufferSize 4096
-#define SendBufferSize 8192
-#define HashTableSize 524288
-#define ConcurrentNum 2
-#define MERGE_PACKET 1
-#define ENABLE_HSAUTH 0
-
-#include "d2gamelist.h"
-
-typedef struct
+typedef struct 
 {
-	WSAOVERLAPPED Overlapped;
-	int Id;
-	char Type;
-} IOCPOverlapped;
-
-typedef struct
-{
-	int Len;
-	char* Data;
-	void* Next;
-} IOCPQueueNode;
-
-typedef struct
-{
-	int Count;
-	IOCPQueueNode *Root;
-} IOCPQueue;
-
-typedef struct
-{
-	SOCKET Peer;
-	char SendState;
-	WSABUF RecvBuffer;
-	char* SendQueue;
-	char* SendBuf;
-	int QueuePos;
-	IOCPOverlapped RecvEvent;
-	IOCPOverlapped SendEvent;
-	IOCPOverlapped DisconnectEvent;
-	IOCPOverlapped ConnectEvent;
-	CRITICAL_SECTION QueueLock;
-	int RecvOffset;
-	WSABUF TempRecvBuffer;
-} IOCPPeer;
-
-typedef struct
-{
-	int Id;
-	time_t ConnTime;
-	char Flag;
-	IOCPPeer Client;
-	IOCPPeer Uplink;
-	int RequestRate;
-	int RemoteAddr;
-	CRITICAL_SECTION Lock;
-	D2CHARINFO *Player;
-	time_t LastActive;
-} IOCPClient;
-
-typedef struct
-{
-	int Count;
-	IOCPClient* Buffer[MaxClient];
-	int Bottom;
-	CRITICAL_SECTION Lock;
-} IOCPReuseStack;
-
-typedef struct
-{
-	int *Keys;
-	int *Values;
-	CRITICAL_SECTION Lock;
-} Hashtable;
+	SOCKET client;
+	SOCKET uplink;
+} t_d2game_connection;
 
 #pragma pack(push, pack01, 1)
 
@@ -97,6 +27,7 @@ typedef struct
 	CHAR charname[16];
 } GSPacket0x68;
 
+
 typedef struct
 {
 	CHAR type;
@@ -108,8 +39,8 @@ typedef struct
 	CHAR type;
 } GSPacket0x6A;
 
+BOOL StartupTrunk();
+DWORD WINAPI MakeBenchmarkConnect(LPVOID lpParam);
+
 #pragma pack(pop, pack01)
-
-int StartupTrunk();
-
 #endif

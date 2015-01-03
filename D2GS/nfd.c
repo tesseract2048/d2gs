@@ -8,10 +8,6 @@
 #define NFD_LEVEL_ENFORCE
 #define NFD_LEVEL_STRICT
 
-/**
-	[Nomanland Firewall of D2GS]
- */
-
 int nfd_filter(char const* data, int start, int end)
 {
 #ifdef NFD_LEVEL_INACTIVE
@@ -19,7 +15,6 @@ int nfd_filter(char const* data, int start, int end)
 #endif
 	int i;
 	if (start < 0) start = 0;
-	//FIXEEEEEEEEEEEEED: How about truncate?
 	for (i = start; i <= end; i ++)
 	{
 		int dt = *((int*)&data[i]);
